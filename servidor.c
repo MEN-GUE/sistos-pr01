@@ -90,22 +90,22 @@ void *manejar_cliente(void *arg) {
         char *origen = campos[1];
         char *destino = campos[2];
         char *contenido = campos[4];
-        
-        // Maneja el registro de usuarios
+
+        // Funcion encargada del registro de usuarios
         if (strcmp(accion, "REG") == 0) {
-            pthread_mutex_lock(&mutex_clientes);
+            pthread_mutex_lock(&mutex_clientes); 
             
             if (buscar_usuario(origen) != -1) {
                 sprintf(respuesta, "ERR|SERVER|%s|25|Nombre de usuario ya existe\n", origen);
                 enviar_mensaje(client_socket, respuesta);
                 pthread_mutex_unlock(&mutex_clientes);
-                break;
+                break; 
             } 
             else if (existe_ip(mi_ip)) {
                 sprintf(respuesta, "ERR|SERVER|%s|16|IP ya registrada\n", origen);
                 enviar_mensaje(client_socket, respuesta);
                 pthread_mutex_unlock(&mutex_clientes);
-                break;
+                break; 
             } 
             else {
                 for (int i = 0; i < MAX_CLIENTS; i++) {
@@ -123,16 +123,15 @@ void *manejar_cliente(void *arg) {
                 }
                 sprintf(respuesta, "OK|SERVER|%s|16|Registro exitoso\n", origen);
                 enviar_mensaje(client_socket, respuesta);
+                printf("[REGISTRO] Usuario '%s' registrado exitosamente.\n", mi_nombre);
             }
-            pthread_mutex_unlock(&mutex_clientes);
+            pthread_mutex_unlock(&mutex_clientes); 
         }
         
-        // Funcion que maneja el envío de mensajes entre usuarios
+        // funcion encargada del envio de mensajes entre usuarios
         else if (strcmp(accion, "MSG") == 0) {
             pthread_mutex_lock(&mutex_clientes);
-            
             sprintf(respuesta, "MSG|%s|%s|%lu|%s\n", origen, destino, strlen(contenido), contenido);
-            
             if (strcmp(destino, "TODOS") == 0) {
                 for (int i = 0; i < MAX_CLIENTS; i++) {
                     if (clientes[i].ocupado && i != mi_indice) {
@@ -150,28 +149,22 @@ void *manejar_cliente(void *arg) {
             }
             pthread_mutex_unlock(&mutex_clientes);
         }
-        
-        // Funcino encargada del cambio de estado del usuario
+
+        // funcion encargada del cambio de estado
         else if (strcmp(accion, "STS") == 0) {
             pthread_mutex_lock(&mutex_clientes);
-        
-            if (strcmp(contenido, "ACTIVO") == 0)
-                clientes[mi_indice].status = ACTIVO;
-            else if (strcmp(contenido, "OCUPADO") == 0)
-                clientes[mi_indice].status = OCUPADO;
-            else if (strcmp(contenido, "INACTIVO") == 0)
-                clientes[mi_indice].status = INACTIVO;
-        
+            if (strcmp(contenido, "ACTIVO") == 0) clientes[mi_indice].status = ACTIVO;
+            else if (strcmp(contenido, "OCUPADO") == 0) clientes[mi_indice].status = OCUPADO;
+            else if (strcmp(contenido, "INACTIVO") == 0) clientes[mi_indice].status = INACTIVO;
+            
             sprintf(respuesta, "STS|SERVER|%s|%lu|%s\n", origen, strlen(contenido), contenido);
             enviar_mensaje(client_socket, respuesta);
-        
             pthread_mutex_unlock(&mutex_clientes);
         }
-        
-        // funcion que se encarga de manejar la solicitud de listado de usuarios conectados
+
+        // funcion del listado de usuarios conectados
         else if (strcmp(accion, "LST") == 0) {
-            char lista_nombres[MAX_BUFFER - 100] = "";
-        
+            char lista_nombres[MAX_BUFFER - 100] = ""; 
             pthread_mutex_lock(&mutex_clientes);
             for (int i = 0; i < MAX_CLIENTS; i++) {
                 if (clientes[i].ocupado) {
@@ -180,19 +173,17 @@ void *manejar_cliente(void *arg) {
                 }
             }
             pthread_mutex_unlock(&mutex_clientes);
-        
             if (strlen(lista_nombres) > 0) {
-                lista_nombres[strlen(lista_nombres) - 1] = '\0';
+                lista_nombres[strlen(lista_nombres) - 1] = '\0'; 
             }
-        
+            
             sprintf(respuesta, "LST|SERVER|%s|%lu|%s\n", origen, strlen(lista_nombres), lista_nombres);
             enviar_mensaje(client_socket, respuesta);
         }
-        
-        //  Funcion donde se hace la solicitud de información de un usuario
+
+        // funcion encargada de la solicitud de información de un usuario
         else if (strcmp(accion, "INF") == 0) {
             pthread_mutex_lock(&mutex_clientes);
-        
             int target_idx = buscar_usuario(contenido);
             if (target_idx != -1) {
                 char *ip_encontrada = clientes[target_idx].ip;
@@ -202,13 +193,24 @@ void *manejar_cliente(void *arg) {
                 sprintf(respuesta, "ERR|SERVER|%s|27|Usuario no esta conectado\n", origen);
                 enviar_mensaje(client_socket, respuesta);
             }
-        
             pthread_mutex_unlock(&mutex_clientes);
         }
-        
-        // Maneja la desconexión del usuario
+
+        // Manejo de la desconexion del usuario
         else if (strcmp(accion, "SAL") == 0) {
             sprintf(respuesta, "OK|SERVER|%s|11|Desconexion\n", origen);
             enviar_mensaje(client_socket, respuesta);
-            break;
+            printf("[DESCONEXION] El usuario %s ha salido del chat.\n", mi_nombre);
+            break; 
         }
+    }
+    
+    // Funcion encargada del cierre del espacio
+    if (mi_indice != -1) {
+        pthread_mutex_lock(&mutex_clientes);
+        clientes[mi_indice].ocupado = 0; 
+        pthread_mutex_unlock(&mutex_clientes);
+    }
+    close(client_socket); 
+    pthread_exit(NULL);   
+}
