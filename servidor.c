@@ -214,3 +214,63 @@ void *manejar_cliente(void *arg) {
     close(client_socket); 
     pthread_exit(NULL);   
 }
+// --- FUNCIÓN PRINCIPAL ---
+int main(int argc, char *argv[]) {
+    // Verificamos que se ejecute correctamente: ./servidor <puerto>
+    if (argc != 2) {
+        printf("Error. Uso correcto: %s <puertodelservidor>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    int puerto = atoi(argv[1]);
+    int server_socket, client_socket;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t addr_size = sizeof(struct sockaddr_in);
+
+    // Creamos el socket principal TCP
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    
+    // Evita el error molesto de "Address already in use" si cierras y abres el servidor rápido
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(puerto);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Error. ¿El puerto está ocupado?");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_socket, 10) == 0) {
+        printf("[INICIO] Servidor encendido y escuchando en el puerto %d...\n", puerto);
+    }
+
+    // Aseguramos que toda la memoria de clientes empiece libre
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        clientes[i].ocupado = 0;
+    }
+
+    // Ciclo infinito para aceptar nuevas conexiones
+    while (1) {
+        client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &addr_size);
+        if (client_socket < 0) continue;
+
+        int *new_sock = malloc(sizeof(int));
+        *new_sock = client_socket;
+
+        pthread_t thread_id;
+        // Creamos un hilo nuevo para atender a este cliente sin bloquear a los demás
+        if (pthread_create(&thread_id, NULL, manejar_cliente, (void*)new_sock) != 0) {
+            free(new_sock);
+            close(client_socket);
+        }
+        
+        // Le decimos al sistema que libere la memoria del hilo automáticamente cuando termine
+        pthread_detach(thread_id);
+    }
+
+    close(server_socket);
+    return 0;
+}
