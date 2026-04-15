@@ -307,18 +307,10 @@ int main(int argc, char *argv[]) {
         clientes[i].ocupado = 0;
     }
 
-    // Aseguramos que toda la memoria de clientes empiece libre
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-        clientes[i].ocupado = 0;
-    }
-
     // GUARDIAN DE INACTIVIDAD
     pthread_t hilo_monitor;
     pthread_create(&hilo_monitor, NULL, monitor_inactividad, NULL);
     pthread_detach(hilo_monitor);
-
-    // Ciclo infinito para aceptar nuevas conexiones
-    while (1) {
 
     // Ciclo infinito para aceptar nuevas conexiones
     while (1) {
