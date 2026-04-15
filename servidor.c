@@ -88,6 +88,19 @@ void *manejar_cliente(void *arg) {
         // Si el mensaje no trae las 5 partes, se para evitar que el servidor colapse
         if (num_campos < 5) continue;
 
+        // ACABAMOS DE RECIBIR ALGO VÁLIDO: ACTUALIZAR EL RELOJ
+        if (mi_indice != -1) {
+            pthread_mutex_lock(&mutex_clientes);
+            clientes[mi_indice].ultima_actividad = time(NULL);
+            // Si estaba inactivo, lo regresamos a ACTIVO porque ya habló
+            if (clientes[mi_indice].status == INACTIVO) {
+                 clientes[mi_indice].status = ACTIVO;
+                 sprintf(respuesta, "STS|SERVER|%s|6|ACTIVO\n", mi_nombre);
+                 enviar_mensaje(client_socket, respuesta);
+            }
+            pthread_mutex_unlock(&mutex_clientes);
+        }
+
         char *accion = campos[0];
         char *origen = campos[1];
         char *destino = campos[2];
