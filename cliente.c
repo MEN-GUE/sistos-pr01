@@ -70,6 +70,14 @@ void limpiar_salto(char *cadena) {
     if (salto) *salto = '\0';
 }
 
+// Función por seguridad: Reemplaza los '|' por espacios vacíos
+void limpiar_pipe(char *cadena) {
+    for (int i = 0; cadena[i] != '\0'; i++) {
+        if (cadena[i] == '|') {
+            cadena[i] = ' '; // Aquí yo remplacé con espacio, podemos ponerle otra cosa
+        }
+    }
+}
 
 int main(int argc, char *argv[]) {
     // 1. Verificamos 
@@ -136,6 +144,7 @@ int main(int argc, char *argv[]) {
                 printf("Escribe tu mensaje para todos: ");
                 fgets(entrada2, sizeof(entrada2), stdin);
                 limpiar_salto(entrada2);
+                limpiar_pipe(entrada2);
                 sprintf(buffer_envio, "MSG|%s|TODOS|%lu|%s\n", mi_usuario, strlen(entrada2), entrada2);
                 send(socket_cliente, buffer_envio, strlen(buffer_envio), 0);
                 break;
@@ -144,9 +153,11 @@ int main(int argc, char *argv[]) {
                 printf("¿A quién le quieres enviar el mensaje?: ");
                 fgets(entrada1, sizeof(entrada1), stdin);
                 limpiar_salto(entrada1);
+                limpiar_pipe(entrada1);
                 printf("Escribe tu mensaje secreto: ");
                 fgets(entrada2, sizeof(entrada2), stdin);
                 limpiar_salto(entrada2);
+                limpiar_pipe(entrada2);
                 sprintf(buffer_envio, "MSG|%s|%s|%lu|%s\n", mi_usuario, entrada1, strlen(entrada2), entrada2);
                 send(socket_cliente, buffer_envio, strlen(buffer_envio), 0);
                 break;
@@ -155,6 +166,7 @@ int main(int argc, char *argv[]) {
                 printf("Elige tu nuevo estado (ACTIVO, OCUPADO, INACTIVO): ");
                 fgets(entrada1, sizeof(entrada1), stdin);
                 limpiar_salto(entrada1);
+                limpiar_pipe(entrada2);
                 sprintf(buffer_envio, "STS|%s|SERVER|%lu|%s\n", mi_usuario, strlen(entrada1), entrada1);
                 send(socket_cliente, buffer_envio, strlen(buffer_envio), 0);
                 break;
@@ -168,6 +180,7 @@ int main(int argc, char *argv[]) {
                 printf("¿De qué usuario quieres saber la IP?: ");
                 fgets(entrada1, sizeof(entrada1), stdin);
                 limpiar_salto(entrada1);
+                limpiar_pipe(entrada2);
                 sprintf(buffer_envio, "INF|%s|SERVER|%lu|%s\n", mi_usuario, strlen(entrada1), entrada1);
                 send(socket_cliente, buffer_envio, strlen(buffer_envio), 0);
                 break;

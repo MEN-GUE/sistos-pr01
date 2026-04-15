@@ -5,6 +5,8 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include "protocolo.h"
+#include <time.h>
+#define TIMEOUT_INACTIVIDAD 30
 
 Cliente clientes[MAX_CLIENTS];
 pthread_mutex_t mutex_clientes = PTHREAD_MUTEX_INITIALIZER;
@@ -107,6 +109,7 @@ void *manejar_cliente(void *arg) {
                 pthread_mutex_unlock(&mutex_clientes);
                 break; 
             } 
+            // Caso REG
             else {
                 for (int i = 0; i < MAX_CLIENTS; i++) {
                     if (!clientes[i].ocupado) {
@@ -115,7 +118,7 @@ void *manejar_cliente(void *arg) {
                         strcpy(clientes[i].nombre_usuario, origen);
                         strcpy(clientes[i].ip, mi_ip);
                         clientes[i].status = ACTIVO;
-                        
+                        clientes[i].ultima_actividad = time(NULL)
                         mi_indice = i;
                         strcpy(mi_nombre, origen);
                         break;
@@ -214,6 +217,35 @@ void *manejar_cliente(void *arg) {
     close(client_socket); 
     pthread_exit(NULL);   
 }
+
+// LO DE LA INACTIVIDAD
+void *monitor_inactividad(void *arg) {
+    char respuesta[MAX_BUFFER];
+    
+    while(1) {
+        sleep(5);
+        
+        pthread_mutex_lock(&mutex_clientes);
+        time_t ahora = time(NULL);
+        
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            if (clientes[i].ocupado && clientes[i].status != INACTIVO) {
+                if (difftime(ahora, clientes[i].ultima_actividad) > TIMEOUT_INACTIVIDAD) {
+                    clientes[i].status = INACTIVO;
+                    
+                    // Le avisamos al cliente que lo cambiamos por inactividad
+                    sprintf(respuesta, "STS|SERVER|%s|8|INACTIVO\n", clientes[i].nombre_usuario);
+                    enviar_mensaje(clientes[i].socket_fd, respuesta);
+                    
+                    printf("[SISTEMA] El usuario %s ha sido marcado como INACTIVO por falta de uso.\n", clientes[i].nombre_usuario);
+                }
+            }
+        }
+        pthread_mutex_unlock(&mutex_clientes);
+    }
+    return NULL;
+}
+
 // --- FUNCIÓN PRINCIPAL ---
 int main(int argc, char *argv[]) {
     // Verificamos que se ejecute correctamente: ./servidor <puerto>
@@ -251,6 +283,19 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < MAX_CLIENTS; i++) {
         clientes[i].ocupado = 0;
     }
+
+    // Aseguramos que toda la memoria de clientes empiece libre
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        clientes[i].ocupado = 0;
+    }
+
+    // GUARDIAN DE INACTIVIDAD
+    pthread_t hilo_monitor;
+    pthread_create(&hilo_monitor, NULL, monitor_inactividad, NULL);
+    pthread_detach(hilo_monitor);
+
+    // Ciclo infinito para aceptar nuevas conexiones
+    while (1) {
 
     // Ciclo infinito para aceptar nuevas conexiones
     while (1) {

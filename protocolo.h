@@ -20,6 +20,7 @@ typedef struct {
     char ip[INET_ADDRSTRLEN];
     StatusUsuario status;
     int ocupado; // 1 ocupado, 0 libre
+    time_t ultima_actividad;
 } Cliente;
 
 #endif
