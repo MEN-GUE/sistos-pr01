@@ -131,7 +131,7 @@ void *manejar_cliente(void *arg) {
                         strcpy(clientes[i].nombre_usuario, origen);
                         strcpy(clientes[i].ip, mi_ip);
                         clientes[i].status = ACTIVO;
-                        clientes[i].ultima_actividad = time(NULL)
+                        clientes[i].ultima_actividad = time(NULL);
                         mi_indice = i;
                         strcpy(mi_nombre, origen);
                         break;
@@ -184,13 +184,23 @@ void *manejar_cliente(void *arg) {
             pthread_mutex_lock(&mutex_clientes);
             for (int i = 0; i < MAX_CLIENTS; i++) {
                 if (clientes[i].ocupado) {
-                    strcat(lista_nombres, clientes[i].nombre_usuario);
-                    strcat(lista_nombres, ",");
+                    // Traducimos el status a texto
+                    char estado_str[15];
+                    if (clientes[i].status == ACTIVO) strcpy(estado_str, "ACTIVO");
+                    else if (clientes[i].status == OCUPADO) strcpy(estado_str, "OCUPADO");
+                    else strcpy(estado_str, "INACTIVO");
+                    
+                    // Armamos el formato: Nombre (ESTADO),
+                    char info_usuario[100];
+                    sprintf(info_usuario, "%s (%s), ", clientes[i].nombre_usuario, estado_str);
+                    strcat(lista_nombres, info_usuario);
                 }
             }
             pthread_mutex_unlock(&mutex_clientes);
-            if (strlen(lista_nombres) > 0) {
-                lista_nombres[strlen(lista_nombres) - 1] = '\0'; 
+            
+            // Quitamos la última coma y el espacio
+            if (strlen(lista_nombres) > 2) {
+                lista_nombres[strlen(lista_nombres) - 2] = '\0'; 
             }
             
             sprintf(respuesta, "LST|SERVER|%s|%lu|%s\n", origen, strlen(lista_nombres), lista_nombres);

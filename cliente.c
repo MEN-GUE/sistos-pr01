@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
                 printf("Elige tu nuevo estado (ACTIVO, OCUPADO, INACTIVO): ");
                 fgets(entrada1, sizeof(entrada1), stdin);
                 limpiar_salto(entrada1);
-                limpiar_pipe(entrada2);
+                limpiar_pipe(entrada1);
                 sprintf(buffer_envio, "STS|%s|SERVER|%lu|%s\n", mi_usuario, strlen(entrada1), entrada1);
                 send(socket_cliente, buffer_envio, strlen(buffer_envio), 0);
                 break;
@@ -180,7 +180,7 @@ int main(int argc, char *argv[]) {
                 printf("¿De qué usuario quieres saber la IP?: ");
                 fgets(entrada1, sizeof(entrada1), stdin);
                 limpiar_salto(entrada1);
-                limpiar_pipe(entrada2);
+                limpiar_pipe(entrada1);
                 sprintf(buffer_envio, "INF|%s|SERVER|%lu|%s\n", mi_usuario, strlen(entrada1), entrada1);
                 send(socket_cliente, buffer_envio, strlen(buffer_envio), 0);
                 break;
